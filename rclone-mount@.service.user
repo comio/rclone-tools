@@ -1,0 +1,17 @@
+[Unit]
+Description=Mount a cloud drive via "rclone mount" on %f
+Documentation=man:rclone(1)
+Documentation=https://rclone.org
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor=/home/
+
+[Service]
+Type=simple
+Environment=RCLONE_CONFIG="%h/.rclone.conf"
+ExecStartPre=/bin/mkdir -p "%f"
+ExecStart=/usr/bin/rclone --config $RCLONE_CONFIG mount $RCLONE_OPTIONS $RCLONE_REMOTE "%f"
+ExecStop=/usr/bin/fusermount -u -z "%f"
+
+[Install]
+WantedBy=default.target
