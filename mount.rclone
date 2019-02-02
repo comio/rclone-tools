@@ -1,0 +1,146 @@
+#!/bin/sh
+
+# Load default parameters
+RCLONE_PARAMS_DFLT="--daemon --config /etc/rclone/rclone.conf"
+[ -f /etc/rclone/mount.conf ] && . /etc/rclone/mount.conf
+RCLONE_PARAMS="${RCLONE_PARAMS_DFLT}"
+
+eprint()
+{
+	echo "$@"
+}
+
+eerror()
+{
+	eprint "$@"
+}
+
+get_uid()
+{
+	local OLD_IFS=$IFS
+	IFS=$':' read u_name u_x u_gid u_garbage <<< `getent passwd $1`
+	IFS=$OLD_IFS
+	[ -z "$u_gid" ] && u_gid="$1"
+	echo -n $u_gid
+}
+
+get_gid()
+{
+	local OLD_IFS=$IFS
+	IFS=$':' read g_name g_x g_gid g_garbage <<< `getent group $1`
+	IFS=$OLD_IFS
+	[ -z "$g_gid" ] && g_gid="$1"
+	echo -n $g_gid
+}
+
+parse_opts()
+{
+	local OLD_IFS="$IFS"
+	IFS=$','
+	for parm in $1; do
+		case "$parm" in
+			x-*|\
+			async|\
+			atime|noatime|\
+			auto|noauto|\
+			defaults|\
+			dev|nodev|\
+			diratime|nodiratime|\
+			dirsync|\
+			exec|noexec|\
+			group|\
+			noiversion|\
+			mand|nomand|\
+			_netdev|\
+			nofail|\
+			relatime|norelatime|\
+			strictatime|nostrictatime|\
+			suid|nosuid|\
+			owner|\
+			remount|\
+			rw|\
+			sync|\
+			user|nouser|\
+			users)
+				# Ignored
+				;;
+			ro)
+				RCLONE_PARAMS="$RCLONE_PARAMS --read-only"
+				;;
+			uid=*)
+				uid="${parm#uid=*}"
+				RCLONE_PARAMS="$RCLONE_PARAMS --uid `get_uid $uid`"
+				;;
+			gid=*)
+				gid="${parm#gid=*}"
+				RCLONE_PARAMS="$RCLONE_PARAMS --gid `get_gid $gid`"
+				;;
+			*)
+				RCLONE_PARAMS="$RCLONE_PARAMS --$parm"
+				;;
+		esac
+	done
+	IFS="$OLD_IFS"
+}
+
+RCLONE_MOUNTPOINT=""
+RCLONE_REMOTE=""
+export PATH="$PATH"
+FAKE=0
+
+while [ "$1" != "" ]; do
+	case "$1" in
+		-s)
+			# Sloppy
+			shift
+			;;
+		-f)
+			# Fake
+			shift
+			FAKE=1
+			;;
+		-n)
+			# Nomtab
+			shift
+			;;
+		-v)
+			# Verbose
+			RCLONE_PARAMS="$RCLONE_PARAMS --verbose"
+			shift
+			;;
+		-t)
+			# Type
+			shift
+			shift
+			;;
+		-N)
+			# Namespace
+			shift
+			shift
+			;;
+		-o)
+			# Options
+			shift
+			parse_opts "$1"
+			shift
+			;;
+		*)
+			if [ -z "${RCLONE_REMOTE}" ]; then
+				RCLONE_REMOTE="$1"
+			elif [ -z "${RCLONE_MOUNTPOINT}" ]; then
+				RCLONE_MOUNTPOINT="$1"
+			else
+				eerror "Invalid option: $1"
+				exit 1
+			fi
+			shift
+			;;
+	esac
+done
+
+if [ $FAKE -eq 0 ]; then
+	exec rclone mount ${RCLONE_PARAMS} "${RCLONE_REMOTE}" "${RCLONE_MOUNTPOINT}"
+	sleep 5s
+else
+	true
+fi
