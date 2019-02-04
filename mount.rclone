@@ -18,10 +18,10 @@ eerror()
 get_uid()
 {
 	local OLD_IFS=$IFS
-	IFS=$':' read u_name u_x u_gid u_garbage <<< `getent passwd $1`
+	IFS=$':' read u_name u_x u_uid u_garbage <<< `getent passwd $1`
 	IFS=$OLD_IFS
-	[ -z "$u_gid" ] && u_gid="$1"
-	echo -n $u_gid
+	[ -z "$u_uid" ] && u_uid="$1"
+	echo -n $u_uid
 }
 
 get_gid()
