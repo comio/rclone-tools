@@ -4,7 +4,7 @@ Documentation=man:rclone(1)
 Documentation=https://rclone.org
 After=network-online.target
 Wants=network-online.target
-RequiresMountsFor=/home/
+RequiresMountsFor=%f
 
 [Service]
 Type=simple
