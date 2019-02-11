@@ -2,7 +2,6 @@
 
 # Load default parameters
 RCLONE_PARAMS_DFLT="--daemon --config /etc/rclone/rclone.conf"
-[ -f /etc/rclone/mount.conf ] && . /etc/rclone/mount.conf
 RCLONE_PARAMS="${RCLONE_PARAMS_DFLT}"
 
 eprint()
@@ -138,8 +137,10 @@ while [ "$1" != "" ]; do
 	esac
 done
 
+[ -f /etc/rclone/mount.conf ] && . /etc/rclone/mount.conf
+
 if [ $FAKE -eq 0 ]; then
-	exec rclone mount ${RCLONE_PARAMS} "${RCLONE_REMOTE}" "${RCLONE_MOUNTPOINT}"
+	rclone mount ${RCLONE_PARAMS} "${RCLONE_REMOTE}" "${RCLONE_MOUNTPOINT}"
 	sleep 5s
 else
 	true
